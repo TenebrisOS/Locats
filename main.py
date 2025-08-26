@@ -33,7 +33,7 @@ def load_known():
             data = json.load(f)
             known_clients = {k.lower(): v for k, v in data.get("clients", {}).items()}
             known_aps = {k.lower(): v for k, v in data.get("aps", {}).items()}
-        print(f"[+] Loaded {len(known_clients)} known clients and {len(known_aps)} known APs")
+        print(f"[+] Loaded {len(known_clients)} known cats and {len(known_aps)} known cat owners")
     except Exception as e:
         print(f"[!] Could not load {KNOWN_FILE}: {e}")
 
@@ -93,7 +93,7 @@ def printer():
         time.sleep(REFRESH_INTERVAL)
         with lock:
             os.system("clear")
-            print("=== Detected Access Points ===")
+            print("=== Detected Cat Owners ===")
             for bssid, ssid in access_points.items():
                 if bssid in known_aps:
                     tag = f"{COLOR_AP}[*{known_aps[bssid]}*]{COLOR_RESET}"
@@ -101,7 +101,7 @@ def printer():
                     tag = ""
                 print(f"SSID: {ssid:<20} BSSID: {bssid}{tag}")
 
-            print("\n=== Detected Clients ===")
+            print("\n=== Detected Cats ===")
             for client, ap in clients.items():
                 client_tag = f"{COLOR_CLIENT}[*{known_clients[client]}*]{COLOR_RESET}" if client in known_clients else ""
                 if ap in access_points:
@@ -124,10 +124,10 @@ def main():
         print("[+] Starting channel hopper...")
         threading.Thread(target=channel_hopper, daemon=True).start()
 
-        print("[+] Starting printer...")
+        print("[+] Taking food...")
         threading.Thread(target=printer, daemon=True).start()
 
-        print("[*] Sniffing... (Ctrl+C to stop)")
+        print("[*] Attracting cats using food... (Ctrl+C to stop)")
         sniff(iface=IFACE, prn=packet_handler, store=0)
     except KeyboardInterrupt:
         print("\n[!] Stopping...")
