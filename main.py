@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import os
 import sys
 import subprocess
@@ -10,13 +9,13 @@ from scapy.all import sniff, Dot11
 # === CONFIG ===
 IFACE = "wlan0"             # your wireless interface
 CHANNELS = range(1, 14)     # 2.4 GHz channels
-HOP_INTERVAL = 0.3          # seconds per channel
-REFRESH_INTERVAL = 1        # seconds between table refresh
+HOP_INTERVAL = 0.3          
+REFRESH_INTERVAL = 1        # refresh rate
 KNOWN_FILE = "known_devices.json"   # JSON file with known devices
 
 # === GLOBAL DATA ===
-access_points = {}       # bssid -> ssid
-clients = {}             # client_mac -> ap_bssid
+access_points = {}       
+clients = {}             
 known_clients = {}
 known_aps = {}
 lock = threading.Lock()
