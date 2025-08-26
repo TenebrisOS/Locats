@@ -2,6 +2,16 @@
 Locats is an open source software designed to detect nearby wireless devices connected to access points.
 No access point authorization needed! 
 Could be used with rooted android devices (not tested)
+
+## Dependencies 
+- Python3, Python3-pip, iw, iproute2 : ```apt install -y python3 python3-pip iw iproute2```
+- Scapy : ```pip3 install scapy```
+- Wireless card monitor mode compatible
+
+## Known Issues
+If you run into "FoundError: No module named...". Make sure to install those modules using sudo
+After all it depends on each system's installation
+
 ## Features
 - [x] Detecting stations (clients)
 - [X] Identifying them (json file, the user should append)
