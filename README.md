@@ -21,6 +21,8 @@ Contributions are highly encouraged and welcome. Please feel free to submit issu
 - Ethereum : ```0x859477061053a5a6a72466fee128fbdff21a34ba```
 - Solana : ```UDyMrbQh5LTBXAT3K22jRZCfnLpw4CwztiYcXBtvd4t```
 
+## Disclaimer
+This tool is designed for educational purposes only, here it demonstrates how easy it is to detect presence.I am not responsible for any misuse of my software!
 ## License
 This project is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html).
 
