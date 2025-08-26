@@ -7,9 +7,10 @@ Could be used with rooted android devices (not tested)
 - Python3, Python3-pip, iw, iproute2 : ```apt install -y python3 python3-pip iw iproute2```
 - Scapy : ```pip3 install scapy```
 - Wireless card monitor mode compatible
+- Rename ```known_device_example.json``` to ```known_devices.json``` and add your known mac addresses.
 
 ## Known Issues
-If you run into "FoundError: No module named...". Make sure to install those modules using sudo
+If you run into "FoundError: No module named...". Make sure to install those modules using sudo.
 After all it depends on each system's installation
 
 ## Features
