@@ -13,15 +13,12 @@ Could be used with rooted android devices (not tested)
 ## Usage
 After completing the program's dependencies, run ```main.py <interface>``` as root. If you don't specify the wireless interface, the program will run on ```wlan0```.
 
-## Accuracy
-The program works better when few wireless devices are nearby. It is less accurate on public spaces such as malls.
-
 ## Known Issues
 - If you run into python module found error. Make sure to install those modules using sudo. After all it depends on each system's installation.
 - If the program does not show any client or access point, try enabling monitor mode manually and disable it from the script
 
 ## Features
-- [x] Detecting stations (clients)
+- [x] Detecting stations (clients) The program works better when few wireless devices are nearby. It is less accurate on public spaces such as malls.
 - [X] Identifying them (json file, the user should append)
 - [X] Identifying networks with many access points (json file to append, the program will recognize the access point even if the mac address is not exactly matching)
 
