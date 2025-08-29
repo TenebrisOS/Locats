@@ -10,9 +10,9 @@ Could be used with rooted android devices (not tested)
 - Rename ```known_device_example.json``` to ```known_devices.json``` and add your known mac addresses.
 
 ## Known Issues
-If you run into "FoundError: No module named...". Make sure to install those modules using sudo.
+- If you run into "FoundError: No module named...". Make sure to install those modules using sudo.
 After all it depends on each system's installation.
-If the program does not show any client or access point, try enabling monitor mode manually and disable it from the script
+- If the program does not show any client or access point, try enabling monitor mode manually and disable it from the script
 
 ## Features
 - [x] Detecting stations (clients)
