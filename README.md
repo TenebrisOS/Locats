@@ -4,19 +4,26 @@ No access point authorization needed!
 Could be used with rooted android devices (not tested)
 
 ## Dependencies 
-- Python3, Python3-pip, iw, iproute2 : ```apt install -y python3 python3-pip iw iproute2```
+- Aircrack-ng : ```apt-get install aircrack-ng``` 
+- Python3, Python3-pip, iw, iproute2 : ```apt-get install -y python3 python3-pip iw iproute2```
 - Scapy : ```pip3 install scapy```
 - Wireless card monitor mode compatible
-- Rename ```known_device_example.json``` to ```known_devices.json``` and add your known mac addresses.
+- Rename ```known_devices_example.json``` to ```known_devices.json``` and add your known mac addresses.
+
+## Usage
+After completing the program's dependencies, run ```main.py <interface>``` as root. If you don't specify the wireless interface, the program will run on ```wlan0```.
+
+## Accuracy
+The program works better when few wireless devices are nearby. It is less accurate on public spaces such as malls.
 
 ## Known Issues
-- If you run into "FoundError: No module named...". Make sure to install those modules using sudo.
-After all it depends on each system's installation.
+- If you run into python module found error. Make sure to install those modules using sudo. After all it depends on each system's installation.
 - If the program does not show any client or access point, try enabling monitor mode manually and disable it from the script
 
 ## Features
 - [x] Detecting stations (clients)
 - [X] Identifying them (json file, the user should append)
+- [X] Identifying networks with many access points (json file to append, the program will recognize the access point even if the mac address is not exactly matching)
 - [ ] Android Root app 
 
 ## Platforms Support
@@ -35,6 +42,7 @@ Contributions are highly encouraged and welcome. Please feel free to submit issu
 
 ## Disclaimer
 This tool is designed for educational purposes only, here it demonstrates how easy it is to detect presence.I am not responsible for any misuse of my software!
+
 ## License
 This project is licensed under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html).
 

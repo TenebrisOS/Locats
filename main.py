@@ -149,4 +149,9 @@ def main():
 if __name__ == "__main__":
     if os.geteuid() != 0:
         sys.exit("[-] Run as root (sudo).")
+    n = len(sys.argv)
+    if n == 2:
+        IFACE = sys.argv[1]
+    elif n > 2:
+        sys.exit(f"[-] Usage: {sys.argv[0]} [interface]")
     main()
