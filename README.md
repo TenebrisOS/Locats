@@ -24,7 +24,13 @@ The program works better when few wireless devices are nearby. It is less accura
 - [x] Detecting stations (clients)
 - [X] Identifying them (json file, the user should append)
 - [X] Identifying networks with many access points (json file to append, the program will recognize the access point even if the mac address is not exactly matching)
+
+<div align="left">
+<img src="scheme.jpg" style="width:70%;">
+</div>
+
 - [ ] Android Root app 
+
 
 ## Platforms Support
 - [x] Linux
