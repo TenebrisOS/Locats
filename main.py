@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import sys
 import subprocess
@@ -7,87 +8,101 @@ import json
 from scapy.all import sniff, Dot11
 
 # === CONFIG ===
-IFACE = "wlan0"             # your wireless interface
-CHANNELS = range(1, 14)     # 2.4 GHz channels
-HOP_INTERVAL = 0.3          
-REFRESH_INTERVAL = 1        # refresh rate
-KNOWN_FILE = "known_devices.json"   # JSON file with known devices
+IFACE = "wlan0"
+CHANNELS = range(1, 14)
+HOP_INTERVAL = 2
+REFRESH_INTERVAL = 1
+KNOWN_FILE = "known_devices.json"
 
 # === GLOBAL DATA ===
-access_points = {}       
-clients = {}             
+access_points = {}   # bssid -> ssid
+clients = {}         # client_mac -> ap_mac
 known_clients = {}
-known_aps = {}
+known_aps = {}       # ssid -> [bssids]
 lock = threading.Lock()
 
-# ANSI colors
+# === COLORS ===
 COLOR_RESET = "\033[0m"
-COLOR_CLIENT = "\033[92m"  # Green
-COLOR_AP = "\033[96m"      # Cyan
+COLOR_CLIENT = "\033[92m"
+COLOR_AP = "\033[96m"
 
-# --- Load known devices from JSON ---
+# --- Normalize MAC for half-match ---
+def mac_prefix(mac, half=True):
+    mac = mac.lower()
+    if half:
+        return ":".join(mac.split(":")[:3])  # first 3 bytes (OUI)
+    return mac
+
+# --- Load known devices ---
 def load_known():
     global known_clients, known_aps
     try:
         with open(KNOWN_FILE, "r") as f:
             data = json.load(f)
             known_clients = {k.lower(): v for k, v in data.get("clients", {}).items()}
-            known_aps = {k.lower(): v for k, v in data.get("aps", {}).items()}
-        print(f"[+] Loaded {len(known_clients)} known cats and {len(known_aps)} known cat owners")
+            # store APs by prefix instead of full mac
+            known_aps.clear()
+            for ssid, macs in data.get("aps", {}).items():
+                prefixes = [mac_prefix(m) for m in macs]
+                known_aps[ssid] = prefixes
+        print(f"[+] Loaded {len(known_clients)} known clients and {len(known_aps)} APs with half-MAC prefixes")
     except Exception as e:
         print(f"[!] Could not load {KNOWN_FILE}: {e}")
 
-# --- Interface mode helpers ---
+# --- Monitor mode helpers ---
 def start_monitor_mode(iface):
-    subprocess.run(["sudo", "ip", "link", "set", iface, "down"])
-    subprocess.run(["sudo", "iw", iface, "set", "monitor", "control"])
-    subprocess.run(["sudo", "ip", "link", "set", iface, "up"])
+    print(f"[+] Enabling monitor mode on {iface}...")
+    subprocess.run(["airmon-ng", "check", "kill"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["airmon-ng", "start", iface], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def stop_monitor_mode(iface):
-    subprocess.run(["sudo", "ip", "link", "set", iface, "down"])
-    subprocess.run(["sudo", "iw", iface, "set", "type", "managed"])
-    subprocess.run(["sudo", "ip", "link", "set", iface, "up"])
+    print(f"[+] Restoring {iface} to managed mode...")
+    subprocess.run(["airmon-ng", "stop", iface + "mon"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(["service", "NetworkManager", "restart"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 # --- Channel hopper ---
-def channel_hopper():
+def channel_hopper(iface):
     while True:
         for ch in CHANNELS:
-            subprocess.run(["iw", "dev", IFACE, "set", "channel", str(ch)],
+            subprocess.run(["iw", "dev", iface + "mon", "set", "channel", str(ch)],
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             time.sleep(HOP_INTERVAL)
 
-# --- Packet parser ---
+# --- Packet handler ---
 def packet_handler(pkt):
     if not pkt.haslayer(Dot11):
         return
     with lock:
-        # Access Points (Beacon frames)
-        if pkt.type == 0 and pkt.subtype == 8:
+        if pkt.type == 0 and pkt.subtype == 8:  # beacon
             bssid = pkt.addr2.lower()
             ssid = pkt.info.decode(errors="ignore") if pkt.info else "<hidden>"
             access_points[bssid] = ssid
 
-        # Clients (Probe requests — no AP yet)
-        elif pkt.type == 0 and pkt.subtype == 4:
+        elif pkt.type == 0 and pkt.subtype == 4:  # probe
             client = pkt.addr2.lower()
-            if client and client not in clients:
-                clients[client] = None
+            clients.setdefault(client, None)
 
-        # Association / authentication requests
-        elif pkt.type == 0 and pkt.subtype in [0, 2, 11]:
+        elif pkt.type == 0 and pkt.subtype in [0, 2, 11]:  # assoc/auth
             client = pkt.addr2.lower()
             ap = pkt.addr1.lower()
             if client and ap:
                 clients[client] = ap
 
-        # Data frames (client <-> AP traffic)
-        elif pkt.type == 2:
-            client = pkt.addr2.lower()
-            ap = pkt.addr1.lower()
+        elif pkt.type == 2:  # data
+            to_ds = pkt.FCfield & 0x1 != 0
+            from_ds = pkt.FCfield & 0x2 != 0
+            if not to_ds and from_ds:
+                ap = pkt.addr2.lower()
+                client = pkt.addr1.lower()
+            elif to_ds and not from_ds:
+                client = pkt.addr2.lower()
+                ap = pkt.addr1.lower()
+            else:
+                return
             if client and ap:
                 clients[client] = ap
 
-# --- Printer thread ---
+# --- Printer ---
 def printer():
     while True:
         time.sleep(REFRESH_INTERVAL)
@@ -95,47 +110,43 @@ def printer():
             os.system("clear")
             print("=== Detected Cat Owners ===")
             for bssid, ssid in access_points.items():
-                if bssid in known_aps:
-                    tag = f"{COLOR_AP}[*{known_aps[bssid]}*]{COLOR_RESET}"
-                else:
-                    tag = ""
-                print(f"SSID: {ssid:<20} BSSID: {bssid}{tag}")
+                tag = ""
+                for ssid_name, prefix_list in known_aps.items():
+                    if mac_prefix(bssid) in prefix_list:
+                        tag = f"{COLOR_AP}[*{ssid_name}*]{COLOR_RESET}"
+                        break
+                print(f"{bssid} ({ssid}) {tag}")
 
             print("\n=== Detected Cats ===")
             for client, ap in clients.items():
-                client_tag = f"{COLOR_CLIENT}[*{known_clients[client]}*]{COLOR_RESET}" if client in known_clients else ""
+                ctag = f"{COLOR_CLIENT}[*{known_clients[client]}*]{COLOR_RESET}" if client in known_clients else ""
                 if ap in access_points:
-                    ap_name = access_points[ap]
-                    ap_tag = f"{COLOR_AP}[*{known_aps[ap]}*]{COLOR_RESET}" if ap in known_aps else ""
-                    print(f"Client: {client}{client_tag} --> AP: {ap_name} ({ap}){ap_tag}")
+                    ssid = access_points[ap]
+                    atag = ""
+                    for ssid_name, prefix_list in known_aps.items():
+                        if mac_prefix(ap) in prefix_list:
+                            atag = f"{COLOR_AP}[*{ssid_name}*]{COLOR_RESET}"
+                            break
+                    print(f"{client}{ctag} --> {ssid} ({ap}) {atag}")
                 elif ap:
-                    ap_tag = f"{COLOR_AP}[*{known_aps[ap]}*]{COLOR_RESET}" if ap in known_aps else ""
-                    print(f"Client: {client}{client_tag} --> AP: {ap}{ap_tag}")
+                    print(f"{client}{ctag} --> {ap}")
                 else:
-                    print(f"Client: {client}{client_tag} --> [Not associated]")
+                    print(f"{client}{ctag} --> [Not associated]")
 
 # --- Main ---
 def main():
     try:
         load_known()
-        print("[+] Enabling monitor mode...")
         start_monitor_mode(IFACE)
-
-        print("[+] Starting channel hopper...")
-        threading.Thread(target=channel_hopper, daemon=True).start()
-
-        print("[+] Taking food...")
+        threading.Thread(target=channel_hopper, args=(IFACE,), daemon=True).start()
         threading.Thread(target=printer, daemon=True).start()
-
-        print("[*] Attracting cats using food... (Ctrl+C to stop)")
-        sniff(iface=IFACE, prn=packet_handler, store=0)
+        sniff(iface=IFACE+"mon", prn=packet_handler, store=0)
     except KeyboardInterrupt:
         print("\n[!] Stopping...")
     finally:
-        print("[+] Restoring interface to managed mode...")
         stop_monitor_mode(IFACE)
 
 if __name__ == "__main__":
     if os.geteuid() != 0:
-        sys.exit("[-] Run this script as root (sudo).")
+        sys.exit("[-] Run as root (sudo).")
     main()

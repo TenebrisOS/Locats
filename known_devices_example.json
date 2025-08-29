@@ -1,0 +1,20 @@
+{
+  "12:34:56:78:9a:bc": {
+    "11:22:33:44:55:66": "My Phone",
+    "aa:bb:cc:dd:ee:ff": "Laptop"
+  },
+  "Home Router": {
+    "11:22:44:33:66": "My Phone",
+    "bb:aa:dd:ee:ff": "Laptop"
+  },
+  "aps": {
+    "Home Router": [
+      "12:34:56:78:9a:bc",
+      "12:34:56:78:9a:bd"
+    ],
+    "Office AP": [
+      "98:76:54:32:10:fe",
+      "98:76:54:32:10:ff"
+    ]
+  }
+}
