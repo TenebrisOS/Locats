@@ -39,15 +39,28 @@ def load_known():
     try:
         with open(KNOWN_FILE, "r") as f:
             data = json.load(f)
-            known_clients = {k.lower(): v for k, v in data.get("clients", {}).items()}
-            # store APs by prefix instead of full mac
+
+            known_clients.clear()
             known_aps.clear()
-            for ssid, macs in data.get("aps", {}).items():
+
+            # Load clients from AP groups
+            for ap_name, entries in data.items():
+                if ap_name == "aps":
+                    continue
+                if isinstance(entries, dict):  # client list under AP name
+                    for client_mac, client_name in entries.items():
+                        known_clients[client_mac.lower()] = client_name
+
+            # Load APs with their BSSIDs
+            for ap_name, macs in data.get("aps", {}).items():
                 prefixes = [mac_prefix(m) for m in macs]
-                known_aps[ssid] = prefixes
-        print(f"[+] Loaded {len(known_clients)} known clients and {len(known_aps)} APs with half-MAC prefixes")
+                known_aps[ap_name] = prefixes
+
+        print(f"[+] Loaded {len(known_clients)} known clients and {len(known_aps)} APs (half-MAC prefixes)")
+
     except Exception as e:
         print(f"[!] Could not load {KNOWN_FILE}: {e}")
+
 
 # --- Monitor mode helpers ---
 def start_monitor_mode(iface):
